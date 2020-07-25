@@ -11,7 +11,7 @@ class GbBlogParse:
     def __init__(self):
         self.posts_urls = set()
         self.pagination_urls = set()
-        self.posts_lib = self.get_posts_data()
+        self.posts_lib = dict()
 
     def get_page_soap(self, url):
         # todo метод запроса страницы и создания супа
@@ -25,6 +25,7 @@ class GbBlogParse:
         soup = self.get_page_soap(url)
         self.pagination_urls.update(self.get_pagination(soup))
         self.posts_urls.update(self.get_posts_urls(soup))
+        self.posts_lib.update(self.get_posts_data())
 
         for url in tuple(self.pagination_urls):
             if url not in self.__done_urls:
@@ -39,10 +40,15 @@ class GbBlogParse:
             response = requests.get(i)
             soup = bs(response.text, 'lxml')
             author_block = soup.find('div', attrs={'class': 'col-md-5 col-sm-12 col-lg-8 col-xs-12 padder-v'})
+            article_block = soup.find('article')
             post_data['title'] = soup.find('h1', attrs={'class': 'blogpost-title'}).get_text()
             post_data['post_url'] = i
             post_data['writer_name'] = soup.find('div', attrs={'itemprop': 'author'}).get_text()
             post_data['writer_url'] = f'{self.__domain}{author_block.find("a").get("href")}'
+            tags = []
+            for itm in article_block.find_all("a", attrs={"class": "small"}):
+                tags.append({itm.get_text():f'{self.__domain}{itm.get("href")}'})
+            post_data['tags'] = tags
             posts_lib.append(post_data)
         return posts_lib
 
