@@ -15,7 +15,7 @@ class GbBlogParse:
         self.collection = data_base['posts']
         self.posts_urls = set()
         self.pagination_urls = set()
-        self.posts_lib = []
+        self.posts_lib = set()
 
     def get_page_soap(self, url):
         # todo метод запроса страницы и создания супа
@@ -29,7 +29,7 @@ class GbBlogParse:
         soup = self.get_page_soap(url)
         self.pagination_urls.update(self.get_pagination(soup))
         self.posts_urls.update(self.get_posts_urls(soup))
-        self.posts_lib.append(self.get_posts_data())
+        self.posts_lib.update(self.get_posts_data())
 
         for url in tuple(self.pagination_urls):
             if url not in self.__done_urls:
@@ -87,7 +87,7 @@ class GbBlogParse:
 if __name__ == '__main__':
     parser = GbBlogParse()
     parser.run()
-#    parser.get_posts_data()
+    parser.get_posts_data()
     parser.save_to_mongo()
 #    parser.save_to_file()
     print(1)
