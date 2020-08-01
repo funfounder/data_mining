@@ -15,7 +15,7 @@ class GbBlogParse:
         self.collection = data_base['posts']
         self.posts_urls = set()
         self.pagination_urls = set()
-        self.posts_lib = set()
+        self.posts_lib = []
 
     def get_page_soap(self, url):
         # todo метод запроса страницы и создания супа
@@ -29,7 +29,7 @@ class GbBlogParse:
         soup = self.get_page_soap(url)
         self.pagination_urls.update(self.get_pagination(soup))
         self.posts_urls.update(self.get_posts_urls(soup))
-        self.posts_lib.update(self.get_posts_data())
+        self.posts_lib.extend(self.get_posts_data())
 
         for url in tuple(self.pagination_urls):
             if url not in self.__done_urls:
@@ -52,7 +52,7 @@ class GbBlogParse:
     # todo Парсинга контента каждого поста
     def get_posts_data(self):
         posts_url = tuple(self.posts_urls)
-        posts_lib = []
+        posts = []
         for i in posts_url:
             post_data = {}
             response = requests.get(i)
@@ -64,16 +64,19 @@ class GbBlogParse:
             post_data['writer_name'] = soup.find('div', attrs={'itemprop': 'author'}).get_text()
             post_data['writer_url'] = f'{self.__domain}{author_block.find("a").get("href")}'
             tags = []
-            for itm in article_block.find_all("a", attrs={"class": "small"}):
-                tags.append({itm.get_text():f'{self.__domain}{itm.get("href")}'})
+            for item in article_block.find_all("a", attrs={"class": "small"}):
+                tags.append({item.get_text():f'{self.__domain}{item.get("href")}'})
             post_data['tags'] = tags
             text = []
             for item in article_block.find('div', attrs={'itemprop': 'articleBody'}).find_all(['p', 'h2']):
                 text.append(item.get_text())
             post_data['article_text'] = text
-            post_data['images'] = article_block.find_all('img')
-            posts_lib.append(post_data)
-        return posts_lib
+            images = []
+            for item in article_block.find_all('img'):
+                images.append(item.get("src"))
+            post_data['article_images'] = images
+            posts.append(post_data)
+        return posts
 
     # todo Выгрузка в Mongo
     def save_to_mongo(self):
